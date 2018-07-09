@@ -17,7 +17,7 @@ public final class BaseballElimination
     private final int[] reamins;
     private final int[][] against;
     private final Map<String, Integer> NameToIndex = new HashMap<>();
-    // temp
+    private final Map<Integer, String> IndexToName = new HashMap<>();
 
     public BaseballElimination(String filename) throws Exception        // create a baseball division from given filename in format specified below
     {
@@ -35,6 +35,7 @@ public final class BaseballElimination
             String[] temp = line.split(" +");
             //set basic value
             NameToIndex.put(temp[0], count);
+            IndexToName.put(count, temp[0]);
             wins[count] = Integer.parseInt(temp[1]);
             losses[count] = Integer.parseInt(temp[2]);
             reamins[count] = Integer.parseInt(temp[3]);
@@ -62,52 +63,112 @@ public final class BaseballElimination
 
     public int wins(String team)                      // number of wins for given team
     {
-        return wins[NameToIndex.get(team)];
+        if (NameToIndex.keySet().contains(team))
+        {
+            return wins[NameToIndex.get(team)];
+        }
+        else
+        {
+            throw new java.lang.IllegalArgumentException();
+        }
     }
 
     public int losses(String team)                    // number of losses for given team
     {
-        return losses[NameToIndex.get(team)];
+        if (NameToIndex.keySet().contains(team))
+        {
+            return losses[NameToIndex.get(team)];
+        }
+        else
+        {
+            throw new java.lang.IllegalArgumentException();
+        }
     }
 
     public int remaining(String team)                 // number of remaining games for given team
     {
-        return reamins[NameToIndex.get(team)];
+
+        if (NameToIndex.keySet().contains(team))
+        {
+            return reamins[NameToIndex.get(team)];
+        }
+        else
+        {
+            throw new java.lang.IllegalArgumentException();
+        }
     }
 
     public int against(String team1, String team2)    // number of remaining games between team1 and team2
     {
-        return against[NameToIndex.get(team1)][NameToIndex.get(team2)];
+        if (NameToIndex.keySet().contains(team1) && NameToIndex.keySet().contains(team2))
+        {
+            return against[NameToIndex.get(team1)][NameToIndex.get(team2)];
+        }
+        else
+        {
+            throw new java.lang.IllegalArgumentException();
+        }
     }
 
     public boolean isEliminated(String team)              // is given team eliminated?
     {
-        FlowNetwork net = Network(team);
-        FordFulkerson fulkerson = new FordFulkerson(net, 0, net.V() - 1);
-        int max = AllGames(team);
-        return max != fulkerson.value();
+        if (NameToIndex.keySet().contains(team))
+        {
+            FlowNetwork net = Network(team);
+            FordFulkerson fulkerson = new FordFulkerson(net, 0, net.V() - 1);
+            int max = AllGames(team);
+            return max != fulkerson.value();
+        }
+        else
+        {
+            throw new java.lang.IllegalArgumentException();
+        }
+
     }
 
     public Iterable<String> certificateOfElimination(String team)  // subset R of teams that eliminates given team; null if not eliminated
     {
-        FlowNetwork net = Network(team);
-        FordFulkerson fulkerson = new FordFulkerson(net, 0, net.V() - 1);
-        int max = AllGames(team);
-        if (max != fulkerson.value())
+        if (NameToIndex.keySet().contains(team))
         {
-            int[] eliminations;
-            for (FlowEdge edge: net.edges())
+            FlowNetwork net = Network(team);
+            FordFulkerson fulkerson = new FordFulkerson(net, 0, net.V() - 1);
+            int max = AllGames(team);
+            if (max != fulkerson.value())
             {
-                if (edge.from() == 0 && edge.flow() < edge.capacity())
+                Iterable<String> elimination = new ArrayList<>();
+                for (FlowEdge edge: net.edges())
                 {
-
+                    if (edge.from() == 0 && edge.flow() < edge.capacity())
+                    {
+                        int a = 0;
+                        for (int current = 0; current < nots; current++)
+                        {
+                            for (int others = current + 1; others < nots; others++) // each pair
+                            {
+                                if (a == edge.to()){
+                                    ((ArrayList<String>) elimination).add(IndexToName.get(current));
+                                    break;
+                                }
+                                else
+                                {
+                                    a++;
+                                }
+                            }
+                        }
+                    }
                 }
+                return elimination;
+            }
+            else
+            {
+                return null;
             }
         }
         else
         {
-            return null;
+            throw new java.lang.IllegalArgumentException();
         }
+
     }
 
     private FlowNetwork Network(String team)
@@ -130,7 +191,7 @@ public final class BaseballElimination
                 }
                 counter++; // for pair placement
             }
-            if (current != GivenTeam)
+            if (current != GivenTeam && maxwin - wins[current] >= 0)
             {
                 net.addEdge(new FlowEdge(1 + pairs + current, pairs + teams + 1, maxwin - wins[current])); // result to t
             }
@@ -160,7 +221,7 @@ public final class BaseballElimination
     {
         try
         {
-            BaseballElimination division = new BaseballElimination("teams4.txt");
+            BaseballElimination division = new BaseballElimination("teams7.txt");
 
             for (String team : division.teams())
             {
@@ -181,7 +242,7 @@ public final class BaseballElimination
         }
         catch (Exception e)
         {
-
+            System.out.println(e.toString());
         }
     }
 }
