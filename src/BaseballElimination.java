@@ -1,13 +1,12 @@
-import java.io.BufferedReader;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.io.FileReader;
 import java.util.Map;
+
 import edu.princeton.cs.algs4.StdOut;
 import edu.princeton.cs.algs4.FlowEdge;
 import edu.princeton.cs.algs4.FlowNetwork;
 import edu.princeton.cs.algs4.FordFulkerson;
+import edu.princeton.cs.algs4.In;
 
 public final class BaseballElimination
 {
@@ -19,20 +18,21 @@ public final class BaseballElimination
     private final Map<String, Integer> NameToIndex = new HashMap<>();
     private final Map<Integer, String> IndexToName = new HashMap<>();
 
-    public BaseballElimination(String filename) throws Exception        // create a baseball division from given filename in format specified below
+    public BaseballElimination(String filename)      // create a baseball division from given filename in format specified below
     {
-        File f = new File(filename);
-        BufferedReader br = new BufferedReader(new FileReader(f));
-        nots = Integer.parseInt(br.readLine());
+        In in = new In(filename);
+        nots = in.readInt();
+        in.readLine();
         wins = new int[nots];
         losses = new int[nots];
         reamins = new int[nots];
         against = new int[nots][nots];
         String line;
         int count = 0;
-        while ((line = br.readLine()) != null)
+        while ((line = in.readLine()) != null)
         {
-            String[] temp = line.split(" +");
+            line = line.replaceFirst("\\s*","");
+            String[] temp = line.split("\\s+");
             //set basic value
             NameToIndex.put(temp[0], count);
             IndexToName.put(count, temp[0]);
@@ -66,8 +66,7 @@ public final class BaseballElimination
         if (NameToIndex.keySet().contains(team))
         {
             return wins[NameToIndex.get(team)];
-        }
-        else
+        } else
         {
             throw new java.lang.IllegalArgumentException();
         }
@@ -78,8 +77,7 @@ public final class BaseballElimination
         if (NameToIndex.keySet().contains(team))
         {
             return losses[NameToIndex.get(team)];
-        }
-        else
+        } else
         {
             throw new java.lang.IllegalArgumentException();
         }
@@ -91,8 +89,7 @@ public final class BaseballElimination
         if (NameToIndex.keySet().contains(team))
         {
             return reamins[NameToIndex.get(team)];
-        }
-        else
+        } else
         {
             throw new java.lang.IllegalArgumentException();
         }
@@ -103,8 +100,7 @@ public final class BaseballElimination
         if (NameToIndex.keySet().contains(team1) && NameToIndex.keySet().contains(team2))
         {
             return against[NameToIndex.get(team1)][NameToIndex.get(team2)];
-        }
-        else
+        } else
         {
             throw new java.lang.IllegalArgumentException();
         }
@@ -118,8 +114,7 @@ public final class BaseballElimination
             FordFulkerson fulkerson = new FordFulkerson(net, 0, net.V() - 1);
             int max = AllGames(team);
             return max != fulkerson.value();
-        }
-        else
+        } else
         {
             throw new java.lang.IllegalArgumentException();
         }
@@ -136,7 +131,7 @@ public final class BaseballElimination
             if (max != fulkerson.value())
             {
                 Iterable<String> elimination = new ArrayList<>();
-                for (FlowEdge edge: net.edges())
+                for (FlowEdge edge : net.edges())
                 {
                     if (edge.from() == 0 && edge.flow() < edge.capacity())
                     {
@@ -145,11 +140,11 @@ public final class BaseballElimination
                         {
                             for (int others = current + 1; others < nots; others++) // each pair
                             {
-                                if (a == edge.to()){
+                                if (a == edge.to())
+                                {
                                     ((ArrayList<String>) elimination).add(IndexToName.get(current));
                                     break;
-                                }
-                                else
+                                } else
                                 {
                                     a++;
                                 }
@@ -158,13 +153,11 @@ public final class BaseballElimination
                     }
                 }
                 return elimination;
-            }
-            else
+            } else
             {
                 return null;
             }
-        }
-        else
+        } else
         {
             throw new java.lang.IllegalArgumentException();
         }
@@ -210,7 +203,7 @@ public final class BaseballElimination
             {
                 if (current != GivenTeam && others != GivenTeam)
                 {
-                    games+= against[current][others];
+                    games += against[current][others];
                 }
             }
         }
@@ -219,30 +212,23 @@ public final class BaseballElimination
 
     public static void main(String[] args)
     {
-        try
-        {
-            BaseballElimination division = new BaseballElimination("teams7.txt");
 
-            for (String team : division.teams())
+        BaseballElimination division = new BaseballElimination(args[0]);
+
+        for (String team : division.teams())
+        {
+            if (division.isEliminated(team))
             {
-                if (division.isEliminated(team))
+                StdOut.print(team + " is eliminated by the subset R = { ");
+                for (String t : division.certificateOfElimination(team))
                 {
-                    StdOut.print(team + " is eliminated by the subset R = { ");
-                    for (String t : division.certificateOfElimination(team))
-                    {
-                        StdOut.print(t + " ");
-                    }
-                    StdOut.println("}");
-                } else
-                {
-                    StdOut.println(team + " is not eliminated");
+                    StdOut.print(t + " ");
                 }
+                StdOut.println("}");
+            } else
+            {
+                StdOut.println(team + " is not eliminated");
             }
-
-        }
-        catch (Exception e)
-        {
-            System.out.println(e.toString());
         }
     }
 }
